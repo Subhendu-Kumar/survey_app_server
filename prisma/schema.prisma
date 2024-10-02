@@ -81,9 +81,7 @@ model ResponseAnswer {
 }
 
 enum QuestionType {
-  single_choice
   multiple_choice
-  text_input
+  short_text
   paragraph
-  rating
 }
