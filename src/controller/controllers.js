@@ -158,3 +158,43 @@ export const createForm = async (req, res) => {
     });
   }
 };
+
+export const getFormDataWithId = async (req, res) => {
+  const { formId } = req.params;
+  try {
+    const form = await prisma.form.findUnique({
+      where: { form_id: formId },
+      include: {
+        questions: {
+          include: {
+            options: true,
+          },
+        },
+      },
+    });
+    if (!form) {
+      return res
+        .status(400)
+        .json({ message: "Form with this ID is not exists." });
+    }
+    const formattedForm = {
+      form_id: form.form_id,
+      title: form.title,
+      description: form.description,
+      questions: form.questions.map((question) => ({
+        question_id: question.question_id,
+        title: question.question_text,
+        type: question.question_type,
+        isRequired: question.is_required,
+        options: question.options.map((option) => option.option_text),
+      })),
+    };
+    res.status(200).json(formattedForm);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Internal server error",
+      error,
+    });
+  }
+};
