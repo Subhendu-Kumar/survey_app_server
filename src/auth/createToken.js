@@ -3,7 +3,7 @@ import { secret } from "../config.js";
 
 export const createToken = (user) => {
   const token = jwt.sign({ user: user }, secret, {
-    expiresIn: "1d",
+    expiresIn: "5d",
   });
   return token;
 };

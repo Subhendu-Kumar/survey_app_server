@@ -93,3 +93,68 @@ export const signIn = async (req, res) => {
     });
   }
 };
+
+export const createForm = async (req, res) => {
+  const { data, formId } = req.body;
+  const { title, description, questions } = data;
+  const user = req.user;
+  if (!user) {
+    return res
+      .status(401)
+      .json({ message: "No user data found, user is unauthorized" });
+  }
+  const user_id = user.user_id;
+  const existingForm = await prisma.form.findUnique({
+    where: { form_id: formId },
+  });
+  if (existingForm) {
+    return res
+      .status(400)
+      .json({ message: "Form with this ID already exists." });
+  }
+  try {
+    await prisma.$transaction(async (prisma) => {
+      const createdForm = await prisma.form.create({
+        data: {
+          form_id: formId,
+          user_id: user_id,
+          title,
+          description,
+        },
+      });
+      for (const question of questions) {
+        const question_id = uuidv4();
+        const createdQuestion = await prisma.question.create({
+          data: {
+            question_id,
+            form_id: createdForm.form_id,
+            question_text: question.title,
+            question_type: question.type,
+            is_required: question.isRequired,
+          },
+        });
+        if (question.type === "multiple_choice") {
+          for (const optionText of question.options) {
+            const option_id = uuidv4();
+            await prisma.option.create({
+              data: {
+                option_id,
+                question_id: createdQuestion.question_id,
+                option_text: optionText,
+              },
+            });
+          }
+        }
+      }
+    });
+    res.status(201).json({
+      message: "form created successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Internal server error",
+      error,
+    });
+  }
+};

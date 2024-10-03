@@ -1,4 +1,4 @@
-import { secret } from "../config";
+import { secret } from "../config.js";
 import jwt from "jsonwebtoken";
 
 const verifyToken = async (req, res, next) => {
