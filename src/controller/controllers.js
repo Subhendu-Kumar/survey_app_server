@@ -104,15 +104,15 @@ export const createForm = async (req, res) => {
       .json({ message: "No user data found, user is unauthorized" });
   }
   const user_id = user.user_id;
-  const existingForm = await prisma.form.findUnique({
-    where: { form_id: formId },
-  });
-  if (existingForm) {
-    return res
-      .status(400)
-      .json({ message: "Form with this ID already exists." });
-  }
   try {
+    const existingForm = await prisma.form.findUnique({
+      where: { form_id: formId },
+    });
+    if (existingForm) {
+      return res
+        .status(400)
+        .json({ message: "Form with this ID already exists." });
+    }
     await prisma.$transaction(async (prisma) => {
       const createdForm = await prisma.form.create({
         data: {
@@ -159,7 +159,7 @@ export const createForm = async (req, res) => {
   }
 };
 
-export const getFormDataWithId = async (req, res) => {
+export const getFormDataWithFormId = async (req, res) => {
   const { formId } = req.params;
   try {
     const form = await prisma.form.findUnique({
@@ -190,6 +190,42 @@ export const getFormDataWithId = async (req, res) => {
       })),
     };
     res.status(200).json(formattedForm);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Internal server error",
+      error,
+    });
+  }
+};
+
+export const getFormDataWithUserId = async (req, res) => {
+  const user = req.user;
+  if (!user) {
+    return res
+      .status(401)
+      .json({ message: "No user data found, user is unauthorized" });
+  }
+  const user_id = user.user_id;
+  try {
+    const form = await prisma.form.findMany({
+      where: {
+        user_id: user_id,
+      },
+      select: {
+        form_id: true,
+        title: true,
+        description: true,
+        updated_at: true,
+        is_active: true,
+      },
+    });
+    if (!form) {
+      return res.status(400).json({
+        message: "No forms found for this user",
+      });
+    }
+    res.status(200).json(form);
   } catch (error) {
     console.error(error);
     res.status(500).json({
