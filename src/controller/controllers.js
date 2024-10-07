@@ -186,7 +186,10 @@ export const getFormDataWithFormId = async (req, res) => {
         title: question.question_text,
         type: question.question_type,
         isRequired: question.is_required,
-        options: question.options.map((option) => option.option_text),
+        options: question.options.map((option) => ({
+          option_id: option.option_id,
+          title: option.option_text,
+        })),
       })),
     };
     res.status(200).json(formattedForm);
@@ -228,6 +231,43 @@ export const getFormDataWithUserId = async (req, res) => {
     res.status(200).json(form);
   } catch (error) {
     console.error(error);
+    res.status(500).json({
+      message: "Internal server error",
+      error,
+    });
+  }
+};
+
+export const submitForm = async (req, res) => {
+  const { form_id, responses } = req.body;
+  const user_id = req.user.user_id;
+  const response_id = uuidv4();
+  try {
+    const result = await prisma.$transaction(async (prisma) => {
+      const createdResponse = await prisma.response.create({
+        data: {
+          response_id,
+          form_id,
+          user_id,
+        },
+      });
+      const createdAnswers = await prisma.responseAnswer.createMany({
+        data: responses.map((answer) => ({
+          response_answer_id: uuidv4(),
+          response_id: createdResponse.response_id,
+          question_id: answer.question_id,
+          answer_text: answer.answer_text,
+          option_id: answer.option_id || null,
+        })),
+      });
+      return { createdResponse, createdAnswers };
+    });
+
+    res.status(200).json({
+      message: "form submitted successfully",
+      result,
+    });
+  } catch (error) {
     res.status(500).json({
       message: "Internal server error",
       error,
