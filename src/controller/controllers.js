@@ -274,3 +274,47 @@ export const submitForm = async (req, res) => {
     });
   }
 };
+
+export const getResponse = async (req, res) => {
+  const { form_id } = req.params;
+  const user_id = req.user.user_id;
+  const existingForm = await prisma.form.findUnique({
+    where: {
+      form_id,
+    },
+  });
+  if (!existingForm) {
+    return res.status(404).json({
+      message: "form with this id doesn't exists",
+    });
+  }
+  if (existingForm.user_id !== user_id) {
+    return res.status(403).json({
+      message: "you don't have permission to access this form",
+    });
+  }
+  try {
+    const result = await prisma.$transaction(async (prisma) => {
+      const questions = await prisma.question.findMany({
+        where: {
+          form_id: form_id,
+        },
+      });
+      const responses = await prisma.response.findMany({
+        where: {
+          form_id: form_id,
+        },
+        include: {
+          answers: true,
+        },
+      });
+      return { questions, responses };
+    });
+    res.status(200).json({ result });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error",
+      error,
+    });
+  }
+};
