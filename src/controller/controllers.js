@@ -140,7 +140,7 @@ export const createForm = async (req, res) => {
               data: {
                 option_id,
                 question_id: createdQuestion.question_id,
-                option_text: optionText,
+                option_text: optionText.value,
               },
             });
           }
