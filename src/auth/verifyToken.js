@@ -1,5 +1,5 @@
-import { secret } from "../config.js";
 import jwt from "jsonwebtoken";
+import { secret } from "../config.js";
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;

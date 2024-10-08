@@ -1,6 +1,6 @@
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
+import { PrismaClient } from "@prisma/client";
 import { createToken } from "../auth/createToken.js";
 import { userSchema } from "../utils/validations_zod.js";
 
